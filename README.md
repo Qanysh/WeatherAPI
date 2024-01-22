@@ -21,8 +21,3 @@
 -   [Google Geocoder](https://developers.google.com/maps/documentation/geocoding/overview) - city name by coordinates
 -   [Geoapify Geocoding API](https://www.geoapify.com/) - coordinates by city name
 -   [Open Weather Map API](https://openweathermap.org/) - weather data api
-<<<<<<< HEAD
--   [Google Material Icons API](https://fonts.google.com/icons) - icons
-=======
--   [Google Material Icons API](https://fonts.google.com/icons) - icons
->>>>>>> dc9025c9e3f9bab14ffb96e583d3d61c29622de8
