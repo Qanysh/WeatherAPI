@@ -1,58 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Arsen Zhamshitov SE-2203</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Roboto:wght@300;400;500;700;900&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <title>Arsen Zhamshitov SE-2203</title>
-</head>
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="images/logo.png" />
 
-<body>
+        <!-- Google Fonts | Roboto Slab + Montserrat -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
 
-    <div class="container">
-        <div class="search-box">
-            <i class="fa-solid fa-location-dot"></i>
-            <input type="text" placeholder="Enter your location">
-            <button class="fa-solid fa-magnifying-glass"></button>
-        </div>
+        <!-- Bootstrap -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+            crossorigin="anonymous"
+        />
 
-        <div class="not-found">
-            <img src="images/404.png">
-            <p>Oops! Invalid location :/</p>
-        </div>
+        <!-- Sweet alerts 2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        <div class="weather-box">
-            <img src="">
-            <p class="temperature"></p>
-            <p class="description"></p>
-        </div>
+        <style>
+            * {
+                font-family: "Roboto Slab";
+                font-weight: 400;
+                font-size: 16px;
+            }
+        </style>
 
-        <div class="weather-details">
-            <div class="humidity">
-                <i class="fa-solid fa-water"></i>
-                <div class="text">
-                    <span></span>
-                    <p>Humidity</p>
+        <script>
+            function sendCity() {
+                var cityName = document.querySelector('[name="city"]').value;
+
+                if (cityName.length < 3) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Location name must be at least 3 characters long!",
+                    });
+                    return;
+                }
+
+                getCitySearch(cityName)
+                    .then((data) => {
+                        window.location.href = `/map?lat=${data.lat}&long=${data.lon}`;
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                        Swal.fire({
+                            icon: "error",
+                            title: "Oops...",
+                            text: "Location was not found!",
+                        });
+                    });
+            }
+
+            async function getCitySearch(searchString) {
+                try {
+                    const response = await fetch(`/api/coordinates?search=${encodeURIComponent(searchString)}`);
+
+                    if (response.status === 404) {
+                        throw new Error("Location was not found!");
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    throw error;
+                }
+            }
+        </script>
+    </head>
+    <body class="vh-100 d-flex flex-column">
+        <div class="bg-dark">
+            <div class="container">
+                <header class="d-flex flex-wrap justify-content-center py-3">
+                    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+                        <img src="/images/logo.png" width="28" height="28" alt="" />
+                        <span class="fs-4 text-light">&nbsp;Weather App | Arsen Zhamshitov SE-2203</span>
+                    </a>
+
+                    <ul class="nav nav-pills">
+                        <li class="nav-item"><a href="/" class="nav-link active" aria-current="page">Home</a></li>
+                    </ul>
+                </header>
+            </div>
+            <div class="px-3 pt-2 border-top mb-3">
+                <div class="container d-flex flex-wrap justify-content">
+                    <div class="d-flex">
+                        <input
+                            type="search"
+                            class="search-input form-control"
+                            placeholder="Enter any location..."
+                            aria-label="Search"
+                            name="city"
+                            required
+                        />
+                        <button class="search-button btn btn-primary" onclick="sendCity()">Search</button>
+                    </div>
                 </div>
             </div>
-            <div class="wind">
-                <i class="fa-solid fa-wind"></i>
-                <div class="text">
-                    <span></span>
-                    <p>Wind Speed</p>
+        </div>
+
+        <div class="vh-100">
+            <div class="bg-image p-5 text-center shadow-1-strong rounded text-white">
+                    <div class="d-flex justify-content-center">
+                        <a class="btn btn-primary p-4 rounded" href="/map">Open World Map</a>
+                    </div>
                 </div>
             </div>
         </div>
-
-    </div>
-
-    <script src="https://kit.fontawesome.com/7c8801c017.js" crossorigin="anonymous"></script>
-    <script src="index.js"></script>
-</body>
-
+    </body>
 </html>

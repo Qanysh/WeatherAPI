@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Arsen Zhamshitov SE-2203</title>
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="images/logo.png" />
+
+        <!-- Google Fonts | Roboto Slab + Montserrat -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Bootstrap -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+            crossorigin="anonymous"
+        />
+
+        <!-- Google Icons -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+        <!-- Sweet alerts 2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        <style>
+            * {
+                font-family: "Roboto Slab";
+                font-weight: 400;
+                font-size: 16px;
+            }
+        </style>
+
+        <!-- Modal card style -->
+        <link rel="stylesheet" href="/css/style.css" />
+
+        <!-- Google Maps API -->
+        <script
+            async
+            defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDCgLf7vHpVodEk9XYt3G0-2rup75799Lo&callback=initMap"
+        ></script>
+
+        <script>
+            let map;
+
+            function initMap() {
+                var map;
+
+                function createMap(lat, lng) {
+                    map = new google.maps.Map(document.getElementById("map"), {
+                        center: { lat: lat, lng: lng },
+                        zoom: 9,
+                    });
+
+                    map.addListener("click", (e) => {
+                        parseModal(e.latLng.lat(), e.latLng.lng());
+                    });
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const latParam = parseFloat(urlParams.get("lat"));
+                const lonParam = parseFloat(urlParams.get("long"));
+
+                if (!isNaN(latParam) && !isNaN(lonParam)) {
+                    createMap(latParam, lonParam);
+                    parseModal(latParam, lonParam);
+                } else if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function (position) {
+                            var lat = position.coords.latitude;
+                            var lng = position.coords.longitude;
+
+                            createMap(lat, lng);
+                        },
+                        function () {
+                            createMap(51.1282205, 71.4306682);
+                        }
+                    );
+                } else {
+                    createMap(51.1282205, 71.4306682);
+                }
+            }
+
+            function getCityName(latLng) {
+                const geocoder = new google.maps.Geocoder();
+
+                return new Promise((resolve, reject) => {
+                    geocoder.geocode({ location: latLng }, (results, status) => {
+                        if (status === "OK") {
+                            if (results[0]) {
+                                const addressComponents = results[0].address_components;
+                                const cityComponent = addressComponents.find(
+                                    (component) =>
+                                        component.types.includes("locality") || component.types.includes("administrative_area_level_1")
+                                );
+
+                                if (cityComponent) {
+                                    const cityName = cityComponent.long_name;
+                                    resolve(cityName);
+                                } else {
+                                    resolve(null);
+                                }
+                            } else {
+                                resolve(null);
+                            }
+                        } else {
+                            reject("Geocoder failed due to: " + status);
+                        }
+                    });
+                });
+            }
+
+            async function parseModal(lat, long) {
+                const weather_data = await getWeatherData(lat, long);
+
+                if (weather_data === "error") {
+                    return;
+                }
+
+                document.getElementById("weather_main_name").innerHTML = weather_data.name;
+                document.getElementById("weather_clouds_all").innerHTML = `${weather_data.clouds}%`;
+                document.getElementById("weather_main_humidity").innerHTML = `${weather_data.humidity}%`;
+                document.getElementById("weather_wind").innerHTML = `${getDirection(
+                    weather_data.wind_deg
+                )}   <i class="material-icons" style="font-size: 14px;">near_me</i>
+                ${weather_data.wind_speed}`;
+                document.getElementById("weather_sun").innerHTML =
+                    weather_data.sunrise +
+                    `&nbsp;&nbsp;<i class="material-icons" style="font-size: 14px;">sunny</i>&nbsp;&nbsp;` +
+                    weather_data.sunset;
+
+                document.getElementById("weather_today_date").innerHTML = new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                });
+                document.getElementById("weather_temperature").innerHTML = `${weather_data.temperature}&#176;C`;
+                document.getElementById("weather_visibility").innerHTML = `${Math.floor(weather_data.visibility / 1000)} km`;
+                document.getElementById("weather_pressure").innerHTML = `${weather_data.pressure} hPa`;
+                document.getElementById(
+                    "weather_min_max"
+                ).innerHTML = `MIN  ${weather_data.temp_min}&#176;C <span class="material-icons">device_thermostat</span> MAX  ${weather_data.temp_max}&#176;C`;
+                document.getElementById("weather_feels").innerHTML = `${weather_data.feels_like}&#176;C`;
+
+                getCityName({ lat: lat, lng: long }).then((cityName) => {
+                    if (cityName === null) {
+                        document.getElementById("weather_city").innerHTML = "Unknown";
+                    } else {
+                        document.getElementById("weather_city").innerHTML = cityName;
+                    }
+                });
+
+                showModal();
+            }
+
+            function getDirection(degrees) {
+                if (degrees > 330 || degrees < 30) {
+                    return "N";
+                } else if (degrees > 30 && degrees < 60) {
+                    return "NE";
+                } else if (degrees > 60 && degrees < 120) {
+                    return "E";
+                } else if (degrees > 120 && degrees < 150) {
+                    return "SE";
+                } else if (degrees > 150 && degrees < 210) {
+                    return "S";
+                } else if (degrees > 210 && degrees < 240) {
+                    return "SW";
+                } else if (degrees > 240 && degrees < 300) {
+                    return "W";
+                } else if (degrees > 300 && degrees < 330) {
+                    return "NW";
+                }
+
+                return null;
+            }
+
+            async function getWeatherData(lat, long) {
+                const response = await fetch(`/api/weather?lat=${lat}&long=${long}`);
+
+                if (response.status != 200) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Something went wrong!",
+                    });
+                    return null;
+                }
+
+                const data = await response.json();
+
+                return data;
+            }
+
+            function showModal() {
+                document.getElementById("modal-overlay").style.display = "flex";
+            }
+
+            function closeModal(event) {
+                if (event.target.id === "modal-overlay") {
+                    document.getElementById("modal-overlay").style.display = "none";
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div class="bg-light fixed-top">
+            <div class="container">
+                <header class="d-flex flex-wrap justify-content-center py-3">
+                    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+                        <img src="/images/logo.png" width="28" height="28" alt="" />
+                        <span class="fs-4 text-dark">&nbsp;Weather App | Arsen Zhamshitov SE-2203</span>
+                    </a>
+
+                    <ul class="nav nav-pills">
+                        <li class="nav-item"><a href="/" class="nav-link" aria-current="page">Home</a></li>
+                    </ul>
+                </header>
+            </div>
+        </div>
+
+        <div id="map" style="height: 100vh; width: 100%"></div>
+
+        <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+            <div class="modal-container" id="modal-container">
+                <div class="row d-flex justify-content-center">
+                    <div class="row card0">
+                        <div class="card1 col-lg-8 col-md-7">
+                            <div class="d-flex align-items-end">
+                                <img src="/images/logo.png" height="24" width="24" alt="" />
+                                <small>&nbsp;Weather</small>
+                            </div>
+                            <div class="text-center">
+                                <img class="image mt-4 object-fit-scale" src="/images/cloud.png" />
+                            </div>
+                            <div class="row px-3 mt-3 mb-3">
+                                <h1 class="large-font mr-3" id="weather_temperature">26&#176;</h1>
+                                <div id="weather_min_max"></div>
+                                <div class="d-flex flex-column mr-3">
+                                    <h2 class="mt-3 mb-0" id="weather_city">London</h2>
+                                    <small id="weather_today_date">10:36 - Tuesday, 22 Oct '19</small>
+                                </div>
+                                <div class="d-flex flex-column text-center">
+                                    <div class="fs-3 text-start" id="weather_main_name">Sunny</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card2 col-lg-4 col-md-5">
+                            <div class="mr-5">
+                                <div class="line my-4"></div>
+
+                                <p class="fs-4 text-center">Details</p>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Cloudy</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_clouds_all">12%</p>
+                                </div>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Humidity</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_main_humidity">78%</p>
+                                </div>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Wind</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_wind">1 km/h SW (gusts)</p>
+                                </div>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Sunrise and Sunset</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_sun">0</p>
+                                </div>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Visibility</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_visibility">0</p>
+                                </div>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Pressure</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_pressure">0</p>
+                                </div>
+                                <div class="row">
+                                    <p class="light-text col-6 col-md-12">Feels like</p>
+                                    <p class="ml-auto col-6 col-md-12" id="weather_feels">0</p>
+                                </div>
+
+                                <div class="line mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
